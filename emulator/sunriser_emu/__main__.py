@@ -40,7 +40,12 @@ def main(argv=None):
     board = board or 8
     state = state or os.path.join('state', f'sr{board}')
     meta_path = os.path.join(state, 'state.json')
-    bee = Bee(args.bee) if args.bee else None
+    try:
+        bee = Bee(args.bee) if args.bee else None
+        if bee:
+            bee.images(board)
+    except (OSError, ValueError) as e:
+        ap.error(str(e))
 
     if args.fresh or not os.path.exists(meta_path):
         if not bee:
@@ -54,7 +59,6 @@ def main(argv=None):
             ap.error(f'{state} holds a SunRiser {meta["board"]}, not a SunRiser {board}')
         if bee:
             card = os.path.join(state, 'sdcard.img')
-            bee.images(board)
             if fat.get_file(card, 'FIRMWARE.BEE') == bee.data:
                 print(f'{bee.description} is already installed', file=sys.stderr)
             else:

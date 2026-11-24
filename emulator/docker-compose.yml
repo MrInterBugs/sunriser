@@ -1,0 +1,21 @@
+# The emulator in a container, with the update file ./NEW.BEE (another one: BEE=/path/to/file.bee):
+#
+#   docker compose up --build          SunRiser 8 on http://localhost:8080/
+#   BOARD=10 docker compose up         SunRiser 10
+#
+# The devices (flash, card, clock) live in the volume "state", one per board. Starting with a different update
+# file puts it on the card as NEW.BEE and the firmware installs it; `docker compose down -v` starts from scratch.
+services:
+  emulator:
+    build: .
+    image: sunriser-emulator
+    init: true
+    ports:
+      - "127.0.0.1:${PORT:-8080}:8080"
+    volumes:
+      - ${BEE:-./NEW.BEE}:/bee/NEW.BEE:ro
+      - state:/state
+    command: ["--board", "${BOARD:-8}", "--state", "/state/sr${BOARD:-8}", "--bee", "/bee/NEW.BEE"]
+
+volumes:
+  state:

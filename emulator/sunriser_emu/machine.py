@@ -15,7 +15,6 @@ from unicorn.arm_const import (UC_CPU_ARM_CORTEX_M3, UC_CPU_ARM_CORTEX_M4, UC_AR
                                UC_ARM_REG_BASEPRI, UC_ARM_REG_FAULTMASK, UC_ARM_REG_R0)
 
 from . import cortexm, eth, fat, stm32
-from .bee import Bee
 from .sdcard import SdCard
 
 APP_OFFSET = 0x8000
@@ -72,7 +71,7 @@ class Rng(stm32.Regs):
 
 
 class Console:
-    """The firmware's debug output (ITM) and the emulator's own messages."""
+    """The firmware's log (from its card), anything it writes to ITM, and the emulator's own messages."""
 
     def __init__(self, m, quiet):
         self.m = m
@@ -149,6 +148,8 @@ class Machine:
         self.pwm = {}
         self.pwm_shown = None
         self.pwm_changed = False
+        self.led_changed = False
+        self.led_shown = None
         self.sd = SdCard(os.path.join(state_dir, 'sdcard.img'))
         self.network = network
         self.logs = fat.LogFollower(os.path.join(state_dir, 'sdcard.img'), self.console.log_line)
@@ -185,7 +186,6 @@ class Machine:
     def _peripherals(self, mac):
         b = self.board
         f4 = b.number == 10
-        self.default = {}
         eeprom = stm32.Eeprom24(mac)
         apb1, apb2 = b.apb1_timer_hz, b.apb2_timer_hz
         on_ccr = self._pwm_changed
@@ -260,8 +260,7 @@ class Machine:
             v = (v & ~(1 << bit)) | ((value & 1) << bit)
             uc.mem_write(word, struct.pack('<I', v))
         else:
-            p, pbase = self.blocks[word >> 10]
-            cur = p.r.get(word - pbase, 0)
+            cur = self._read(word, 4)            # the bus does a read-modify-write, as on the device
             self._write(word, 4, (cur & ~(1 << bit)) | ((value & 1) << bit))
 
     def _ppb_read(self, uc, off, size, _):
@@ -326,13 +325,22 @@ class Machine:
             self.pwm_shown = line
             self.log(f'PWM {line}')
 
-    def _status_led(self):
-        odr = self.gpio['E'].odr
-        lit = [n for n, pin in (('PE13', 13), ('PE14', 14), ('PE15', 15)) if not odr & (1 << pin)]
-        self.log(f'status LED: {"+".join(lit) if lit else "off"}')
+    COLOURS = {(0, 0, 0): 'off', (1, 0, 0): 'red', (0, 1, 0): 'green', (0, 0, 1): 'blue', (1, 1, 0): 'yellow',
+               (0, 1, 1): 'cyan', (1, 0, 1): 'magenta', (1, 1, 1): 'white'}
 
-    def on_exception_entry(self, e):
-        pass
+    def _status_led(self):
+        self.led_changed = True
+
+    def _show_led(self):
+        """The SunRiser 10's status LED (PE13 red, PE14 green, PE15 blue, active low), once it has settled."""
+        if not self.led_changed:
+            return
+        self.led_changed = False
+        odr = self.gpio['E'].odr
+        colour = self.COLOURS[tuple(int(not odr & (1 << pin)) for pin in (13, 14, 15))]
+        if colour != self.led_shown:
+            self.led_shown = colour
+            self.log(f'status LED {colour}')
 
     # -- CPU --
     def _cpu_reset(self):
@@ -429,6 +437,7 @@ class Machine:
                 last_poll = wall
             if wall - last_show > 0.5:
                 self._show_pwm()
+                self._show_led()
                 self.logs.poll()
                 last_show = wall
             if wall - last_save > 10:

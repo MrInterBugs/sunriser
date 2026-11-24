@@ -302,7 +302,6 @@ class SCS:
             raise Fault(f'vector of exception {e} is {handler:#010x}')
         uc.reg_write(UC_ARM_REG_PC, handler | 1)
         self.active.append((e, exc_return))
-        self.m.on_exception_entry(e)
 
     def _exit(self):
         uc = self.uc
@@ -315,7 +314,7 @@ class SCS:
         sp = uc.reg_read(UC_ARM_REG_SP)
         regs = list(struct.unpack('<8I', bytes(uc.mem_read(sp, 32))))
         if fp:
-            sregs = struct.unpack('<16II', bytes(uc.mem_read(sp + 0x20, 72)))
+            sregs = struct.unpack('<18I', bytes(uc.mem_read(sp + 0x20, 72)))
             for r, v in zip(S_REGS, sregs):
                 uc.reg_write(r, v)
             uc.reg_write(UC_ARM_REG_FPSCR, sregs[16])
@@ -345,8 +344,8 @@ class SCS:
 
 
 class PPB:
-    """Debug components on the private peripheral bus: ITM (the firmware's debug output), DWT's cycle counter and the
-    STM32 DBGMCU block."""
+    """Debug components on the private peripheral bus: ITM (to the console), DWT's cycle counter and the STM32 DBGMCU
+    block."""
 
     def __init__(self, m, output):
         self.m = m
