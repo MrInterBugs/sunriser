@@ -30,3 +30,7 @@ CONFIG.MP
 
 /tmp/*
 
+
+/emulator/.venv/
+/state/
+__pycache__/
