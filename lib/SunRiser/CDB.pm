@@ -169,6 +169,17 @@ sub add_factory {
     $self->debug('Adding raw ___bootloader');
     $self->cdb->put_replace('___bootloader',scalar $bootloader->slurp_raw);
   }
+  # SunRiser 10 images, if main10.bin and bootloader10.bin exist
+  my $main10 = path('main10.bin');
+  if (-f $main10) {
+    $self->debug('Adding raw ___firmware10');
+    $self->cdb->put_replace('___firmware10',scalar $main10->slurp_raw);
+  }
+  my $bootloader10 = path('bootloader10.bin');
+  if (-f $bootloader10) {
+    $self->debug('Adding raw ___bootloader10');
+    $self->cdb->put_replace('___bootloader10',scalar $bootloader10->slurp_raw);
+  }
   return 1;
 }
 

@@ -10,7 +10,6 @@ for (qw(
   SunRiser::Finder
   SunRiser::Publisher
   SunRiser::Role::Logger
-  SunRiser::Simulator
   SunRiser::Test
 )) {
   use_ok($_);

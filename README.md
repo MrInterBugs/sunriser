@@ -22,7 +22,7 @@ welche Sie vorher direkt selber testen können, wird ein bisschen Erfahrung mit
 [git](https://de.wikipedia.org/wiki/Git) und der englischen Sprache vorausgesetzt.
 Ein [Linux](https://de.wikipedia.org/wiki/Linux) Betriebssystem und Erfahrung mit diesem sind auch notwendig.
 
-Sie können den Simulator und die Umgebung mit folgenden Anweisungen einrichten
+Sie können die Umgebung mit folgenden Anweisungen einrichten
 (neben git und curl wird auch ein C compiler benötigt):
 
 ```bash
@@ -30,8 +30,31 @@ curl -L https://cpanmin.us | perl - --local-lib=~/perl5 local::lib App::cpanminu
 git clone https://github.com/LEDaquaristik/sunriser.git
 cd sunriser
 ~/perl5/bin/cpanm --local-lib=~/perl5 --installdeps .
-perl -I$HOME/perl5/lib/perl5 -Mlocal::lib bin/sunriser_simulator
 ```
+
+Emulator
+========
+
+Der Emulator im Verzeichnis [`emulator/`](emulator/README.md) führt die Firmware
+einer Update-Datei (`.bee`) auf einem emulierten SunRiser 8 oder 10 aus: der
+Bootloader und die Firmware aus der Datei laufen Befehl für Befehl, und die
+Weboberfläche unter http://localhost:8080/ liefert die Firmware selbst aus.
+Benötigt werden Python 3 und libslirp (`apt install libslirp0`, auf macOS
+`brew install libslirp`):
+
+```bash
+cd emulator
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m sunriser_emu --bee NEW.BEE        # SunRiser 10: --board 10
+```
+
+Oder mit Docker, mit der Update-Datei `emulator/NEW.BEE`:
+`cd emulator && docker compose up --build`.
+
+Um eigene Änderungen an der Weboberfläche zu testen, wird mit
+`bin/sunriser_factory` eine Update-Datei mit der Weboberfläche dieses
+Repositorys erzeugt und im Emulator gestartet (siehe
+[`emulator/README.md`](emulator/README.md)).
 
 Microcontroller Software
 ========================

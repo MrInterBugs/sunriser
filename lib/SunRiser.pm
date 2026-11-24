@@ -1,5 +1,5 @@
 package SunRiser;
-# ABSTRACT: LEDaquaristik.de SunRiser Simulator & Builder
+# ABSTRACT: LEDaquaristik.de SunRiser Builder & Tools
 
 use Moo;
 use Data::MessagePack;

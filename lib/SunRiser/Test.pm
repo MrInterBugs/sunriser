@@ -1,5 +1,5 @@
 package SunRiser::Test;
-# ABSTRACT: SunRiser Test Helper for Simulator
+# ABSTRACT: SunRiser Test Helper for a SunRiser or the emulator
 
 use Moo;
 use Test::More;
@@ -7,12 +7,9 @@ use Path::Tiny;
 use File::ShareDir::ProjectDistDir;
 use Plack::Test::Agent;
 use Plack::App::Proxy;
+use SunRiser::Config;
+use SunRiser::Publisher;
 use DDP;
-
-has sim => (
-  is => 'ro',
-  predicate => 1,
-);
 
 has remote => (
   is => 'ro',
@@ -24,7 +21,6 @@ has app => (
 
 sub _build_app {
   my ( $self ) = @_;
-  return $self->sim->psgi if $self->has_sim;
   return Plack::App::Proxy->new( remote => $self->remote, backend => 'LWP', options => { timeout => 5 } )->to_app;
 }
 
@@ -47,7 +43,7 @@ has pub => (
 
 sub _build_pub {
   my ( $self ) = @_;
-  return $self->sim->publisher;
+  return SunRiser::Publisher->new( config => SunRiser::Config->new );
 }
 
 sub base_test {
