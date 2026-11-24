@@ -36,7 +36,8 @@ def main(argv=None):
     board = args.board
     state = args.state
     if state and not board and os.path.exists(os.path.join(state, 'state.json')):
-        board = json.load(open(os.path.join(state, 'state.json')))['board']
+        with open(os.path.join(state, 'state.json')) as f:
+            board = json.load(f)['board']
     board = board or 8
     state = state or os.path.join('state', f'sr{board}')
     meta_path = os.path.join(state, 'state.json')
@@ -54,7 +55,8 @@ def main(argv=None):
         print(f'new SunRiser {board} in {state}: {bee.description} (sha256 {bee.sha256[:16]}...), '
               f'MAC {":".join(meta["mac"][i:i + 2] for i in range(0, 12, 2))}', file=sys.stderr)
     else:
-        meta = json.load(open(meta_path))
+        with open(meta_path) as f:
+            meta = json.load(f)
         if meta['board'] != board:
             ap.error(f'{state} holds a SunRiser {meta["board"]}, not a SunRiser {board}')
         if bee:

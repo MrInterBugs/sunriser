@@ -113,15 +113,15 @@ class Machine:
         self.reset_flags = RESET_POWER
         self.fixups = []
         self.console = Console(self, quiet)
-        meta = json.load(open(os.path.join(state_dir, 'state.json')))
-        self.meta = meta
+        meta = self.meta = _load(state_dir, 'state.json')
         self.uc = uc = Uc(UC_ARCH_ARM, UC_MODE_THUMB | UC_MODE_MCLASS)
         uc.ctl_set_cpu_model(UC_CPU_ARM_CORTEX_M4 if self.board.fpu else UC_CPU_ARM_CORTEX_M3)
 
         # flash: one buffer at its own address and at the boot alias 0; stores to it are programming operations
         b = self.board
         self.flash = (ctypes.c_ubyte * b.flash_size)()
-        data = open(os.path.join(state_dir, 'flash.bin'), 'rb').read()
+        with open(os.path.join(state_dir, 'flash.bin'), 'rb') as f:
+            data = f.read()
         ctypes.memmove(self.flash, data, min(len(data), b.flash_size))
         self.flash_dirty = False
         for base in (0, b.flash_base):
@@ -138,7 +138,7 @@ class Machine:
             uc.mem_write(0x1FFF7A10, bytes.fromhex(meta['uid']))
             uc.mem_write(0x1FFF7A22, struct.pack('<H', b.flash_size >> 10))
 
-        self.backup = stm32.Backup(self, json.load(open(os.path.join(state_dir, 'backup.json'))))
+        self.backup = stm32.Backup(self, _load(state_dir, 'backup.json'))
         self.scs = cortexm.SCS(self, b.fpu)
         self.ppb = cortexm.PPB(self, self.console.firmware)
         self.blocks = {}
@@ -456,6 +456,11 @@ class Machine:
         with open(os.path.join(self.state_dir, 'backup.json.new'), 'w') as f:
             json.dump(self.backup.state(), f)
         os.replace(os.path.join(self.state_dir, 'backup.json.new'), os.path.join(self.state_dir, 'backup.json'))
+
+
+def _load(state_dir, name):
+    with open(os.path.join(state_dir, name)) as f:
+        return json.load(f)
 
 
 class _NoNetwork:
